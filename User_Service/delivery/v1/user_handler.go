@@ -5,7 +5,10 @@ import (
 	"User_Service/entity/httpentity"
 	"User_Service/lib/logger"
 	"User_Service/service"
+	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
@@ -15,12 +18,14 @@ import (
 type UserHandler struct {
 	UserService *service.UserService
 	Logger      logger.Logger
+	RedisClient redis.Client
 }
 
-func NewUserHandler(userService *service.UserService, logger logger.Logger) *UserHandler {
+func NewUserHandler(userService *service.UserService, logger logger.Logger, red *redis.Client) *UserHandler {
 	return &UserHandler{
 		UserService: userService,
 		Logger:      logger,
+		RedisClient: red,
 	}
 }
 
@@ -67,8 +72,45 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 }
 
 func (h *UserHandler) GetAllUser(c echo.Context) error {
+
+	cacheKey := "all_users"
+	cachedData, err := h.RedisClient.Get(context.Background(), cacheKey).Result()
+	//if err == nil {
+	//	// Data found in cache, return cached data
+	//	var response entity.GetAllUserResponses
+	//	if err := json.Unmarshal([]byte(cachedData), &response); err != nil {
+	//		return c.JSON(http.StatusInternalServerError, &entity.Response{
+	//			Success: false,
+	//			Message: "Error unmarshalling cached data",
+	//		})
+	//	}
+	//	return c.JSON(http.StatusOK, &entity.Response{
+	//		Success: true,
+	//		Message: "Getting done (from cache)",
+	//		Data:    response,
+	//	})
+	//}
+	if err != nil {
+		return c.JSON(http.StatusNotFound, &entity.Response{
+			Success: false,
+			Message: "No data available to chache",
+		})
+	}
+	var response entity.GetAllUserResponses
+	if err := json.Unmarshal([]byte(cachedData), &response); err != nil {
+		return c.JSON(http.StatusInternalServerError, &entity.Response{
+			Success: false,
+			Message: "error unmarshaling data",
+		})
+	}
+	return c.JSON(http.StatusOK, &entity.Response{
+		Success: true,
+		Message: "getting done (from cache)",
+		Data:    response,
+	})
+
 	filter := entity.UserFilter{}
-	err := c.Bind(&filter)
+	err = c.Bind(&filter)
 
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, &entity.Response{
@@ -83,15 +125,26 @@ func (h *UserHandler) GetAllUser(c echo.Context) error {
 			Message: err.Error(),
 		})
 	}
-	response := entity.GetAllUserResponses{
-		Total: count,
-		Page:  filter.Page,
-		Users: res,
-	}
+	go func() {
+		response := entity.GetAllUserResponses{
+			Total: count,
+			Page:  filter.Page,
+			Users: res,
+		}
+		fmt.Println(response)
+		responseJSON, err := json.Marshal(response)
+		if err != nil {
+			return
+		}
+		if err == nil {
+			h.RedisClient.Set(context.Background(), cacheKey, responseJSON, time.Minute)
+		}
+	}()
+
 	return c.JSON(http.StatusOK, &entity.Response{
 		Success: true,
 		Message: "Getting done",
-		Data:    response,
+		Data:    res,
 	})
 }
 
