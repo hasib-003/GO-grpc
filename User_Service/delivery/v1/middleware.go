@@ -24,6 +24,7 @@ func InvalidJwt(err error) error {
 
 type Role string
 
+// shshgsh
 const (
 	RoleAdmin Role = "admin"
 	RoleUser  Role = "user"
