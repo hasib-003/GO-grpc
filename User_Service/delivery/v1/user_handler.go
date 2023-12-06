@@ -11,7 +11,6 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
-	"math"
 	"net/http"
 	"time"
 )
@@ -120,11 +119,12 @@ func (h *UserHandler) GetAllUser(c echo.Context) error {
 			Users: res,
 		}
 		fmt.Println(response)
-		responseJSON, err := json.Marshal(math.Inf(1))
+		responseJSON, err := json.Marshal(response)
 		if err != nil {
 			errorChannel <- err
 			return
 		}
+
 		if err := h.RedisClient.Set(context.Background(), cacheKey, responseJSON, time.Second).Err(); err != nil {
 			errorChannel <- fmt.Errorf("error setting data to cache: %w", err)
 			return
@@ -133,7 +133,7 @@ func (h *UserHandler) GetAllUser(c echo.Context) error {
 	if err := <-errorChannel; err != nil {
 		return c.JSON(http.StatusInternalServerError, &entity.Response{
 			Success: false,
-			Message: err.Error(),
+			Message: "jj",
 		})
 	}
 
