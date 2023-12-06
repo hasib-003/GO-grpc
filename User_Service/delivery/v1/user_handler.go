@@ -11,6 +11,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
+	"math"
 	"net/http"
 	"time"
 )
@@ -75,21 +76,7 @@ func (h *UserHandler) GetAllUser(c echo.Context) error {
 
 	cacheKey := "all_users"
 	cachedData, err := h.RedisClient.Get(context.Background(), cacheKey).Result()
-	//if err == nil {
-	//	// Data found in cache, return cached data
-	//	var response entity.GetAllUserResponses
-	//	if err := json.Unmarshal([]byte(cachedData), &response); err != nil {
-	//		return c.JSON(http.StatusInternalServerError, &entity.Response{
-	//			Success: false,
-	//			Message: "Error unmarshalling cached data",
-	//		})
-	//	}
-	//	return c.JSON(http.StatusOK, &entity.Response{
-	//		Success: true,
-	//		Message: "Getting done (from cache)",
-	//		Data:    response,
-	//	})
-	//}
+
 	if err != nil {
 		return c.JSON(http.StatusNotFound, &entity.Response{
 			Success: false,
@@ -125,6 +112,7 @@ func (h *UserHandler) GetAllUser(c echo.Context) error {
 			Message: err.Error(),
 		})
 	}
+	errorChannel := make(chan error, 1)
 	go func() {
 		response := entity.GetAllUserResponses{
 			Total: count,
@@ -132,14 +120,22 @@ func (h *UserHandler) GetAllUser(c echo.Context) error {
 			Users: res,
 		}
 		fmt.Println(response)
-		responseJSON, err := json.Marshal(response)
+		responseJSON, err := json.Marshal(math.Inf(1))
 		if err != nil {
+			errorChannel <- err
 			return
 		}
-		if err == nil {
-			h.RedisClient.Set(context.Background(), cacheKey, responseJSON, time.Minute)
+		if err := h.RedisClient.Set(context.Background(), cacheKey, responseJSON, time.Second).Err(); err != nil {
+			errorChannel <- fmt.Errorf("error setting data to cache: %w", err)
+			return
 		}
 	}()
+	if err := <-errorChannel; err != nil {
+		return c.JSON(http.StatusInternalServerError, &entity.Response{
+			Success: false,
+			Message: err.Error(),
+		})
+	}
 
 	return c.JSON(http.StatusOK, &entity.Response{
 		Success: true,
