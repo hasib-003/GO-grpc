@@ -94,3 +94,16 @@ func (repo *BooksRepository) Delete(ctx context.Context, bookId string) error {
 
 	return err
 }
+func (repo *BooksRepository) GetBooksByUserID(ctx context.Context, userID int) (entity.MessageResponse, error) {
+	var books entity.MessageResponse
+	err := repo.DB.NewSelect().Model(&books).
+		Relation("User").
+		Where("user_id = ?", userID).
+		Scan(ctx)
+
+	if err != nil {
+		return entity.MessageResponse{}, err
+	}
+
+	return books, nil
+}

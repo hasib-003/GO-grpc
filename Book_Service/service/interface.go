@@ -11,4 +11,5 @@ type Repository interface {
 	GetABook(ctx context.Context, bookId string) (entity.Books, error)
 	Update(ctx context.Context, data entity.Books, bookId string) error
 	Delete(ctx context.Context, bookId string) error
+	GetBooksByUserID(ctx context.Context, id int) (entity.MessageResponse, error)
 }

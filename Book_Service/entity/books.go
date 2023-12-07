@@ -18,6 +18,13 @@ type Books struct {
 	UpdatedBy       *string    `json:"updated_by" bun:"type:uuid,default:uuid_generate_v4()"`
 }
 
+type MessageRequest struct {
+	UserID int `json:"user_id"`
+}
+type MessageResponse struct {
+	Books []Books `json:"books"`
+}
+
 func (p *Books) Validate() []FieldError {
 	return validate(p)
 }
