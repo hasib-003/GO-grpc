@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+
+option go_package = "./rayhan";
+
+package proto;
+
+message Book {
+  int32 id = 1;
+  string title = 2;
+  int32 user_id = 3;
+  int32 publication_year = 4;
+
+}
+message GetBooksRequest {
+  int32 user_id = 1;
+}
+
+message GetBooksResponse {
+  repeated Book books = 1;
+}
+
+// Define your service
+service BookService {
+  rpc GetBooksByUserID (GetBooksRequest) returns (GetBooksResponse);
+}

@@ -3,7 +3,6 @@ package v1
 import (
 	"User_Service/entity"
 	"User_Service/entity/httpentity"
-	"fmt"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	"log"
@@ -42,7 +41,7 @@ func authorized(roles ...Role) echo.MiddlewareFunc {
 			}
 
 			claim, ok := token.Claims.(*entity.JwtClaims)
-			fmt.Printf("claim user id>>>>>>> %+v\n", claim)
+			//fmt.Printf("claim >>>>>>> %+v\n", claim)
 			if !ok {
 				return echo.NewHTTPError(http.StatusUnauthorized, &entity.Response{
 					Success: false,
@@ -51,8 +50,8 @@ func authorized(roles ...Role) echo.MiddlewareFunc {
 			}
 
 			for _, role := range roles {
-				fmt.Println("role.....................", role)
-				fmt.Println("clainm >>>>>>>", claim.UserId)
+				//	fmt.Println("role.....................", role)
+				//fmt.Println("userid >>>>>>>", claim.UserId)
 				if checkPermission(role, claim.Role) {
 					return next(c)
 				}

@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.1
-// source: proto/example.proto
+// source: get_book.proto
 
-package proto
+package rayhan
 
 import (
 	context "context"
@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BookServiceClient interface {
-	GetBooksByUserId(ctx context.Context, in *UserIdRequest, opts ...grpc.CallOption) (*BookListResponse, error)
+	GetBooksByUserID(ctx context.Context, in *GetBooksRequest, opts ...grpc.CallOption) (*GetBooksResponse, error)
 }
 
 type bookServiceClient struct {
@@ -33,9 +33,9 @@ func NewBookServiceClient(cc grpc.ClientConnInterface) BookServiceClient {
 	return &bookServiceClient{cc}
 }
 
-func (c *bookServiceClient) GetBooksByUserId(ctx context.Context, in *UserIdRequest, opts ...grpc.CallOption) (*BookListResponse, error) {
-	out := new(BookListResponse)
-	err := c.cc.Invoke(ctx, "/BookService/GetBooksByUserId", in, out, opts...)
+func (c *bookServiceClient) GetBooksByUserID(ctx context.Context, in *GetBooksRequest, opts ...grpc.CallOption) (*GetBooksResponse, error) {
+	out := new(GetBooksResponse)
+	err := c.cc.Invoke(ctx, "/proto.BookService/GetBooksByUserID", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (c *bookServiceClient) GetBooksByUserId(ctx context.Context, in *UserIdRequ
 // All implementations must embed UnimplementedBookServiceServer
 // for forward compatibility
 type BookServiceServer interface {
-	GetBooksByUserId(context.Context, *UserIdRequest) (*BookListResponse, error)
+	GetBooksByUserID(context.Context, *GetBooksRequest) (*GetBooksResponse, error)
 	mustEmbedUnimplementedBookServiceServer()
 }
 
@@ -54,8 +54,8 @@ type BookServiceServer interface {
 type UnimplementedBookServiceServer struct {
 }
 
-func (UnimplementedBookServiceServer) GetBooksByUserId(context.Context, *UserIdRequest) (*BookListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetBooksByUserId not implemented")
+func (UnimplementedBookServiceServer) GetBooksByUserID(context.Context, *GetBooksRequest) (*GetBooksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBooksByUserID not implemented")
 }
 func (UnimplementedBookServiceServer) mustEmbedUnimplementedBookServiceServer() {}
 
@@ -70,20 +70,20 @@ func RegisterBookServiceServer(s grpc.ServiceRegistrar, srv BookServiceServer) {
 	s.RegisterService(&BookService_ServiceDesc, srv)
 }
 
-func _BookService_GetBooksByUserId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UserIdRequest)
+func _BookService_GetBooksByUserID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBooksRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BookServiceServer).GetBooksByUserId(ctx, in)
+		return srv.(BookServiceServer).GetBooksByUserID(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/BookService/GetBooksByUserId",
+		FullMethod: "/proto.BookService/GetBooksByUserID",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BookServiceServer).GetBooksByUserId(ctx, req.(*UserIdRequest))
+		return srv.(BookServiceServer).GetBooksByUserID(ctx, req.(*GetBooksRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -92,14 +92,14 @@ func _BookService_GetBooksByUserId_Handler(srv interface{}, ctx context.Context,
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var BookService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "BookService",
+	ServiceName: "proto.BookService",
 	HandlerType: (*BookServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetBooksByUserId",
-			Handler:    _BookService_GetBooksByUserId_Handler,
+			MethodName: "GetBooksByUserID",
+			Handler:    _BookService_GetBooksByUserID_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/example.proto",
+	Metadata: "get_book.proto",
 }
