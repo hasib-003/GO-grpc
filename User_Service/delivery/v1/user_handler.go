@@ -11,7 +11,10 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc"
+	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -37,6 +40,7 @@ func (h *UserHandler) MapUserRoutes(userGroup *echo.Group, authenticated echo.Mi
 	userGroup.PUT("/:id", h.UpdateUser, authenticated, authorized(RoleUser, RoleAdmin))
 	userGroup.DELETE("/delete", h.DeleteUser, authenticated, authorized(RoleUser, RoleAdmin))
 	userGroup.POST("/login", h.Login)
+
 }
 
 func (h *UserHandler) CreateUser(c echo.Context) error {
@@ -250,4 +254,28 @@ func (h *UserHandler) Login(c echo.Context) error {
 		Message: "All ok ,Good to go ",
 		Data:    token,
 	})
+}
+func GetUserBooks(c echo.Context) error {
+
+	userID, err := strconv.Atoi(c.Param("userId"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid user ID"})
+	}
+
+	bookServiceConn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("Failed to connect to the bookservice: %v", err)
+	}
+	defer bookServiceConn.Close()
+
+	bookServiceClient := pb.NewBookServiceClient(bookServiceConn)
+
+	// Perform gRPC call
+	booksResponse, err := bookServiceClient.GetBooksByUserID(context.Background(), &pb.GetBooksRequest{UserId: int32(userID)})
+	if err != nil {
+		log.Fatalf("Failed to get books from the bookservice: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get books"})
+	}
+
+	return c.JSON(http.StatusOK, booksResponse)
 }

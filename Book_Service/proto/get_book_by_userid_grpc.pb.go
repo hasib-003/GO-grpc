@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.1
-// source: get_book.proto
+// source: proto/get_book_by_userid.proto
 
-package rayhan
+package hasib
 
 import (
 	context "context"
@@ -101,5 +101,5 @@ var BookService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "get_book.proto",
+	Metadata: "proto/get_book_by_userid.proto",
 }

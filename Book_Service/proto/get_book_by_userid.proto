@@ -1,10 +1,9 @@
 syntax = "proto3";
 
 
-option go_package = "./rayhan";
+option go_package = "./hasib";
 
 package proto;
-
 message Book {
   int32 id = 1;
   string title = 2;
