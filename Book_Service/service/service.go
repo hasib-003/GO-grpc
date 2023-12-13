@@ -55,14 +55,13 @@ func (s *Service) Delete(ctx context.Context, bookId string) error {
 	return nil
 }
 
-//func (s *Service) GetBooksByUserID(ctx context.Context, request entity.MessageRequest) (entity.MessageResponse, error) {
-//	books, err := s.BooksRepository.GetBooksByUserID(ctx, request.UserID)
-//	if err != nil {
-//		return entity.MessageResponse{}, err
-//	}
-//	response := entity.MessageResponse{
-//		Books: books,
-//	}
-//
-//	return response, nil
-//}
+func (s *Service) GetBooksByUserID(ctx context.Context, request entity.MessageRequest) (entity.MessageResponse, error) {
+	books, err := s.BooksRepository.GetBooksByUserID(ctx, request.UserID)
+	if err != nil {
+		return entity.MessageResponse{}, err
+	}
+	//response := entity.MessageResponse{
+	//	Books: books,
+	//}
+	return books, nil
+}

@@ -11,7 +11,10 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc"
+	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -37,6 +40,7 @@ func (h *UserHandler) MapUserRoutes(userGroup *echo.Group, authenticated echo.Mi
 	userGroup.PUT("/:id", h.UpdateUser, authenticated, authorized(RoleUser, RoleAdmin))
 	userGroup.DELETE("/delete", h.DeleteUser, authenticated, authorized(RoleUser, RoleAdmin))
 	userGroup.POST("/login", h.Login)
+
 }
 
 func (h *UserHandler) CreateUser(c echo.Context) error {
@@ -73,19 +77,14 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 
 func (h *UserHandler) GetAllUser(c echo.Context) error {
 	cacheKey := "all_users"
-
-	// Try to get data from the cache
 	cachedData, err := h.RedisClient.Get(context.Background(), cacheKey).Result()
 	if err != nil && err != redis.Nil {
-		// Handle errors other than cache miss
 		return c.JSON(http.StatusInternalServerError, &entity.Response{
 			Success: false,
 			Message: "Error retrieving data from the cache",
 		})
 	}
-
 	if err == redis.Nil {
-		// Data not found in the cache, fetch it from the service
 		filter := entity.UserFilter{}
 		if err := c.Bind(&filter); err != nil {
 			return c.JSON(http.StatusBadRequest, &entity.Response{
@@ -93,7 +92,6 @@ func (h *UserHandler) GetAllUser(c echo.Context) error {
 				Message: "Bad request",
 			})
 		}
-
 		res, count, err := h.UserService.GetAllUser(c.Request().Context(), filter)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, &entity.Response{
@@ -101,23 +99,17 @@ func (h *UserHandler) GetAllUser(c echo.Context) error {
 				Message: err.Error(),
 			})
 		}
-
-		// Cache the fetched data
 		go func() {
 			response := entity.GetAllUserResponses{
 				Total: count,
 				Page:  filter.Page,
 				Users: res,
 			}
-
 			responseJSON, err := json.Marshal(response)
 			if err != nil {
-				// Handle JSON marshal error
 				return
 			}
-
 			if err := h.RedisClient.Set(context.Background(), cacheKey, responseJSON, time.Minute).Err(); err != nil {
-				// Handle cache set error
 				return
 			}
 		}()
@@ -127,11 +119,8 @@ func (h *UserHandler) GetAllUser(c echo.Context) error {
 			Data:    res,
 		})
 	}
-
-	// Data found in the cache, unmarshal and return
 	var response entity.GetAllUserResponses
 	if err := json.Unmarshal([]byte(cachedData), &response); err != nil {
-		// Handle JSON unmarshal error
 		return c.JSON(http.StatusInternalServerError, &entity.Response{
 			Success: false,
 			Message: "Error unmarshaling data",
@@ -265,4 +254,28 @@ func (h *UserHandler) Login(c echo.Context) error {
 		Message: "All ok ,Good to go ",
 		Data:    token,
 	})
+}
+func GetUserBooks(c echo.Context) error {
+
+	userID, err := strconv.Atoi(c.Param("userId"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid user ID"})
+	}
+
+	bookServiceConn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("Failed to connect to the bookservice: %v", err)
+	}
+	defer bookServiceConn.Close()
+
+	bookServiceClient := pb.NewBookServiceClient(bookServiceConn)
+
+	// Perform gRPC call
+	booksResponse, err := bookServiceClient.GetBooksByUserID(context.Background(), &pb.GetBooksRequest{UserId: int32(userID)})
+	if err != nil {
+		log.Fatalf("Failed to get books from the bookservice: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get books"})
+	}
+
+	return c.JSON(http.StatusOK, booksResponse)
 }
