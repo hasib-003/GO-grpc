@@ -5,6 +5,7 @@ import (
 	"Book_Service/lib/logger"
 	"Book_Service/repository"
 	"Book_Service/service"
+	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 
 	"github.com/labstack/echo/v4/middleware"
@@ -16,7 +17,12 @@ func SetupRouters(c *echo.Echo, conf *config.Config, db *bun.DB, jwtConfig middl
 
 	booksRepository := repository.NewBooksRepository(db)
 	booksService := service.NewBooksService(booksRepository)
-	booksHandler := NewBooksHandler(booksService, logger)
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+	booksHandler := NewBooksHandler(booksService, logger, redisClient)
 
 	authenticated := middleware.JWTWithConfig(jwtConfig)
 

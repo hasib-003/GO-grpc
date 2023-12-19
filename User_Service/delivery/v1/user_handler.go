@@ -79,7 +79,7 @@ func (h *UserHandler) GetAllUser(c echo.Context) error {
 			Message: "Error retrieving data from the cache",
 		})
 	}
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		filter := entity.UserFilter{}
 		if err := c.Bind(&filter); err != nil {
 			return c.JSON(http.StatusBadRequest, &entity.Response{
@@ -253,7 +253,7 @@ func (h *UserHandler) Login(c echo.Context) error {
 func (h *UserHandler) GetUserBooks(c echo.Context) error {
 	userID := sessionData(c).UserId
 	fmt.Println("id...................................", userID)
-	bookServiceConn, err := grpc.Dial("localhost:2002", grpc.WithInsecure())
+	bookServiceConn, err := grpc.Dial("localhost:5000", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Failed to connect to the bookservice: %v", err)
 	}
