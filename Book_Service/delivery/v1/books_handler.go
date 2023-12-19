@@ -94,7 +94,7 @@ func (h *BooksHandler) ListAllBooks(c echo.Context) error {
 
 }
 func (h *BooksHandler) GetABook(c echo.Context) error {
-	bookId := c.Param("id")
+	bookId := sessionData(c).BookID
 	res, err := h.Service.GetABook(c.Request().Context(), bookId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, &entity.Response{
@@ -158,4 +158,22 @@ func (h *BooksHandler) Delete(c echo.Context) error {
 		Success: true,
 		Message: "Successfully Deleted",
 	})
+}
+
+func (h *BooksHandler) GetBooksByUserID(c echo.Context) error {
+	userId := c.Param("user_id")
+	res, err := h.Service.GetABook(c.Request().Context(), userId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, &entity.Response{
+			Success: false,
+			Message: err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, &entity.Response{
+		Success: true,
+		Message: "Successfully get a user",
+		Data:    res,
+	})
+
 }

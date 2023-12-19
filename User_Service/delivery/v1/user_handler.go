@@ -4,9 +4,11 @@ import (
 	"User_Service/entity"
 	"User_Service/entity/httpentity"
 	"User_Service/lib/logger"
+	pb "User_Service/proto"
 	"User_Service/service"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
@@ -14,7 +16,6 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 )
 
@@ -40,6 +41,7 @@ func (h *UserHandler) MapUserRoutes(userGroup *echo.Group, authenticated echo.Mi
 	userGroup.PUT("/:id", h.UpdateUser, authenticated, authorized(RoleUser, RoleAdmin))
 	userGroup.DELETE("/delete", h.DeleteUser, authenticated, authorized(RoleUser, RoleAdmin))
 	userGroup.POST("/login", h.Login)
+	userGroup.GET("/getBook", h.GetUserBooks)
 
 }
 
@@ -54,14 +56,7 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 			Data:    err,
 		})
 	}
-	validationError := data.Validate()
-	if validationError != nil {
-		return c.JSON(http.StatusBadRequest, &entity.Response{
-			Success: false,
-			Message: "Validation Error",
-			Data:    err.Error(),
-		})
-	}
+
 	err = h.UserService.CreateUser(c.Request().Context(), data)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, &entity.Response{
@@ -78,7 +73,7 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 func (h *UserHandler) GetAllUser(c echo.Context) error {
 	cacheKey := "all_users"
 	cachedData, err := h.RedisClient.Get(context.Background(), cacheKey).Result()
-	if err != nil && err != redis.Nil {
+	if err != nil && !errors.Is(err, redis.Nil) {
 		return c.JSON(http.StatusInternalServerError, &entity.Response{
 			Success: false,
 			Message: "Error retrieving data from the cache",
@@ -123,7 +118,7 @@ func (h *UserHandler) GetAllUser(c echo.Context) error {
 	if err := json.Unmarshal([]byte(cachedData), &response); err != nil {
 		return c.JSON(http.StatusInternalServerError, &entity.Response{
 			Success: false,
-			Message: "Error unmarshaling data",
+			Message: "Error unmarshalling data",
 		})
 	}
 
@@ -242,7 +237,7 @@ func (h *UserHandler) Login(c echo.Context) error {
 	}
 	expirationTime := time.Now().Add(24 * time.Hour)
 	token, err := user.GetJwt(expirationTime, user.UserId, user.Role)
-	fmt.Println("useid>>>.....userrole...........", user.UserId, user.Role)
+	fmt.Println("userid>>>.....user role...........", user.UserId, user.Role)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, &entity.Response{
 			Success: false,
@@ -255,22 +250,22 @@ func (h *UserHandler) Login(c echo.Context) error {
 		Data:    token,
 	})
 }
-func GetUserBooks(c echo.Context) error {
-
-	userID, err := strconv.Atoi(c.Param("userId"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid user ID"})
-	}
-
-	bookServiceConn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+func (h *UserHandler) GetUserBooks(c echo.Context) error {
+	userID := sessionData(c).UserId
+	fmt.Println("id...................................", userID)
+	bookServiceConn, err := grpc.Dial("localhost:2002", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Failed to connect to the bookservice: %v", err)
 	}
-	defer bookServiceConn.Close()
+	defer func(bookServiceConn *grpc.ClientConn) {
+		err := bookServiceConn.Close()
+		if err != nil {
+
+		}
+	}(bookServiceConn)
 
 	bookServiceClient := pb.NewBookServiceClient(bookServiceConn)
 
-	// Perform gRPC call
 	booksResponse, err := bookServiceClient.GetBooksByUserID(context.Background(), &pb.GetBooksRequest{UserId: int32(userID)})
 	if err != nil {
 		log.Fatalf("Failed to get books from the bookservice: %v", err)
