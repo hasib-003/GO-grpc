@@ -61,6 +61,16 @@ func (repo *UserRepository) GetAUser(ctx context.Context, id int) (entity.UserRe
 
 	return data, nil
 }
+func (repo *UserRepository) GetAUserRedis(id int) (entity.UserRegistration, error) {
+	var data entity.UserRegistration
+	err := repo.DB.NewSelect().Model(&data).Where("user_id =?", id)
+
+	if err != nil {
+		return entity.UserRegistration{}, nil
+	}
+
+	return data, nil
+}
 
 func (repo *UserRepository) GetUserByEmail(ctx context.Context, email string) (entity.UserRegistration, error) {
 	var data entity.UserRegistration

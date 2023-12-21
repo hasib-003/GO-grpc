@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"syscall"
 
@@ -58,8 +59,9 @@ func main() {
 	}
 
 	v1.SetupRouters(e, conf, db, jwtConfig, appLogger)
-	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
+	go v1.SubscribeToRedis()
 	go httpServer(e, conf.HTTP)
 
 	quit := make(chan os.Signal, 1)
@@ -74,8 +76,9 @@ func main() {
 	}
 	log.Println("HTTP server stopped!")
 }
+
 func httpServer(e *echo.Echo, httpConfig config.HTTP) {
-	if err := e.Start(httpConfig.HTTPAddress); err != nil && err != http.ErrServerClosed {
+	if err := e.Start(httpConfig.HTTPAddress); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		e.Logger.Fatal("shutting down the server")
 	}
 }

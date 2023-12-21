@@ -19,6 +19,13 @@ type BooksHandler struct {
 	RedisClient *redis.Client
 }
 
+var ctx = context.Background()
+var redisClient = redis.NewClient(&redis.Options{
+	Addr:     "localhost:6379",
+	Password: "",
+	DB:       0,
+})
+
 func NewBooksHandler(booksService *service.Service, logger logger.Logger, red *redis.Client) *BooksHandler {
 	return &BooksHandler{
 		Service:     booksService,
@@ -131,14 +138,21 @@ func (h *BooksHandler) ListAllBooks(c echo.Context) error {
 	})
 
 }
+
 func (h *BooksHandler) GetABook(c echo.Context) error {
-	bookId := sessionData(c).BookID
+	bookId := c.Param("id")
+	//	fmt.Println("...................................", bookId)
+
 	res, err := h.Service.GetABook(c.Request().Context(), bookId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, &entity.Response{
 			Success: false,
 			Message: err.Error(),
 		})
+	}
+	message := res.UserId
+	if err := redisClient.Publish(ctx, "publisher", message).Err(); err != nil {
+		return err
 	}
 
 	return c.JSON(http.StatusOK, &entity.Response{
