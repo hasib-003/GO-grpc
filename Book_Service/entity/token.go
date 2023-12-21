@@ -8,13 +8,8 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-type CustomClaim struct {
-	Id                string `json:"id"`
-	AccountType       string `json:"account_type"`
-	AccountCategoryId int    `json:"account_category_id"`
-}
 type JwtClaim struct {
-	CustomClaim
+	BookID string `json:"book_id"`
 	jwt.StandardClaims
 }
 

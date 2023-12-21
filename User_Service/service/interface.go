@@ -12,5 +12,6 @@ type UserRepository interface {
 	GetAUser(ctx context.Context, id int) (entity.UserRegistration, error)
 	UpdateUser(ctx context.Context, data entity.UserRegistration, id int) error
 	DeleteUser(ctx context.Context, id int) error
+	GetAUserRedis(id int) (entity.UserRegistration, error)
 	GetUserByEmail(ctx context.Context, email string) (entity.UserRegistration, error)
 }

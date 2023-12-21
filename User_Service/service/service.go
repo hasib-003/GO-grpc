@@ -39,6 +39,13 @@ func (s *UserService) GetAUser(ctx context.Context, id int) (entity.UserRegistra
 	}
 	return res, nil
 }
+func (s *UserService) GetAUserRedis(id int) (entity.UserRegistration, error) {
+	res, err := s.UserRepository.GetAUserRedis(id)
+	if err != nil {
+		return entity.UserRegistration{}, err
+	}
+	return res, nil
+}
 func (s *UserService) GetUserByEmail(ctx context.Context, email string) (entity.UserRegistration, error) {
 
 	fmt.Println(email)
