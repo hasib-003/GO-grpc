@@ -145,6 +145,18 @@ func (h *UserHandler) GetAUser(c echo.Context) error {
 		Data:    res,
 	})
 }
+func (h *UserHandler) GetAUserRedis(id int) (entity.UserRegistration, error) {
+	fmt.Println("userid...........", id)
+
+	// Call the UserService with the provided ID
+	res, err := h.UserService.GetAUserRedis(id)
+	if err != nil {
+		return entity.UserRegistration{}, err
+	}
+
+	return res, nil
+}
+
 func (h *UserHandler) GetUserByEmail(c echo.Context) error {
 	email := c.Param("email")
 	res, err := h.UserService.GetUserByEmail(c.Request().Context(), email)

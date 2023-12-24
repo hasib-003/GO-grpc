@@ -63,7 +63,8 @@ func (repo *UserRepository) GetAUser(ctx context.Context, id int) (entity.UserRe
 }
 func (repo *UserRepository) GetAUserRedis(id int) (entity.UserRegistration, error) {
 	var data entity.UserRegistration
-	err := repo.DB.NewSelect().Model(&data).Where("user_id =?", id)
+	ctx := context.Background()
+	err := repo.DB.NewSelect().Model(&data).Where("user_id =?", id).Scan(ctx)
 
 	if err != nil {
 		return entity.UserRegistration{}, nil

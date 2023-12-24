@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"net/http"
@@ -151,14 +152,28 @@ func (h *BooksHandler) GetABook(c echo.Context) error {
 		})
 	}
 	message := res.UserId
-	if err := redisClient.Publish(ctx, "publisher", message).Err(); err != nil {
+	if err := redisClient.Publish(ctx, "request", message).Err(); err != nil {
 		return err
 	}
+
+	cx := context.Background()
+	subscriber := redisClient.Subscribe(cx, "response")
+	msg, err := subscriber.ReceiveMessage(cx)
+	if err != nil {
+		fmt.Println("Error receiving message")
+		return nil
+	}
+	fmt.Println("received message......", msg.Payload)
+	var resp entity.RedisResponse
+	resp.Title = res.Title
+	resp.Id = res.Id
+	resp.UserName = msg.Payload
+	resp.PublicationYear = res.PublicationYear
 
 	return c.JSON(http.StatusOK, &entity.Response{
 		Success: true,
 		Message: "Successfully get a book",
-		Data:    res,
+		Data:    resp,
 	})
 
 }
